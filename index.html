@@ -118,6 +118,12 @@
             <button id="btn-upload-set" class="primary-btn">Create Set from Files</button>
             <p class="help-text">* 줄바꿈(Enter) 기준으로 문장이 매핑됩니다.</p>
           </div>
+
+          <div class="upload-section">
+            <h4>Import from QR Code</h4>
+            <textarea id="import-code-input" class="input-field" rows="3" placeholder="QR 코드 아래의 공유 코드를 여기에 붙여넣으세요..."></textarea>
+            <button id="btn-import-code" class="primary-btn">Import Set</button>
+          </div>
         </div>
 
         <!-- Sentences in Current Set -->
@@ -261,12 +267,16 @@
         <button class="close-btn">&times;</button>
       </div>
       <div class="modal-body" style="text-align: center;">
-        <p style="margin-bottom: 1rem; color: var(--text-color-muted); font-size: 0.9rem;">Scan this QR code with a mobile camera to import this set.</p>
-        <div id="qr-code-container" style="display: flex; justify-content: center; margin: 1.5rem 0;">
+        <p style="margin-bottom: 1rem; color: var(--text-color-muted); font-size: 0.9rem;">기본 카메라로 QR 코드를 스캔하거나, 아래 코드를 복사해서 Import 하세요.</p>
+        <div id="qr-code-container" style="display: flex; justify-content: center; margin: 1rem 0;">
           <!-- QR Code will be generated here -->
         </div>
-        <p id="qr-set-name" style="font-weight: 500; margin-bottom: 1.5rem;"></p>
-        <button id="btn-copy-link" class="primary-btn">Copy Link</button>
+        <p id="qr-set-name" style="font-weight: 500; margin-bottom: 1rem;"></p>
+        <div style="text-align: left; margin-bottom: 1rem;">
+          <p style="font-size: 0.75rem; color: var(--text-color-muted); margin-bottom: 0.4rem;">Share Code (이 코드를 복사해서 다른 기기에서 Import 하세요)</p>
+          <textarea id="qr-share-code" class="input-field" rows="3" readonly style="font-family: var(--font-typing); font-size: 0.7rem; resize: none; cursor: text;"></textarea>
+        </div>
+        <button id="btn-copy-link" class="primary-btn">Copy Share Code</button>
       </div>
     </div>
   </div>

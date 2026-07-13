@@ -81,7 +81,6 @@ const btnTest = document.getElementById('btn-test');
 // --- Initialization ---
 function init() {
   loadData();
-  checkUrlImport(); // Check if a shared set is in the URL before other setup
   applySettings();
   setupEventListeners();
   
@@ -91,6 +90,9 @@ function init() {
   
   setPracticeMode();
   renderSetsList();
+  
+  // Check URL import AFTER everything is set up, giving time for CDN scripts to fully initialize
+  setTimeout(checkUrlImport, 100);
 }
 
 function setPracticeMode() {
@@ -462,15 +464,26 @@ function setupEventListeners() {
   
   // Result Modals Buttons
   document.getElementById('btn-copy-link').addEventListener('click', () => {
-    if (!currentQrUrl) return;
-    navigator.clipboard.writeText(currentQrUrl).then(() => {
+    const code = currentShareCode;
+    if (!code) return;
+    navigator.clipboard.writeText(code).then(() => {
       const btn = document.getElementById('btn-copy-link');
       const original = btn.textContent;
       btn.textContent = 'Copied! ✓';
       setTimeout(() => { btn.textContent = original; }, 2000);
     }).catch(() => {
-      prompt('Copy this link manually:', currentQrUrl);
+      // Fallback: select the textarea so user can copy manually
+      const ta = document.getElementById('qr-share-code');
+      if (ta) { ta.select(); ta.setSelectionRange(0, 99999); }
     });
+  });
+
+  document.getElementById('btn-import-code').addEventListener('click', () => {
+    const code = document.getElementById('import-code-input').value;
+    const success = importFromCode(code);
+    if (success) {
+      document.getElementById('import-code-input').value = '';
+    }
   });
 
   document.getElementById('btn-save-result').addEventListener('click', () => {
@@ -665,51 +678,64 @@ function renderSetsList() {
 }
 
 // --- QR Code Share Logic ---
-let currentQrUrl = '';
+let currentShareCode = '';
+
+// Guard: returns true only if LZString library is loaded
+function isLZStringReady() {
+  return typeof LZString !== 'undefined';
+}
 
 function openQrModal(set) {
-  const payload = JSON.stringify({ name: set.name, date: set.date, sentences: set.sentences });
-  const compressed = LZString.compressToEncodedURIComponent(payload);
-  const baseUrl = window.location.href.split('?')[0].split('#')[0];
-  currentQrUrl = `${baseUrl}?import=${compressed}`;
+  if (!isLZStringReady()) {
+    alert('공유 기능을 위한 라이브러리가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
 
-  document.getElementById('qr-set-name').textContent = `"${set.name}" (${set.sentences.length} sentences)`;
+  const payload = JSON.stringify({ name: set.name, date: set.date, sentences: set.sentences });
+  // Encode as pure data (not a URL) so QR code stays small and works offline/locally
+  currentShareCode = LZString.compressToEncodedURIComponent(payload);
+
+  document.getElementById('qr-set-name').textContent = `"${set.name}" (${set.sentences.length}개 문장)`;
+  document.getElementById('qr-share-code').value = currentShareCode;
 
   const container = document.getElementById('qr-code-container');
   container.innerHTML = ''; // Clear previous QR
 
+  // Use lowest error correction level (L) to keep QR code small and easy to scan
   new QRCode(container, {
-    text: currentQrUrl,
-    width: 220,
-    height: 220,
-    colorDark: getComputedStyle(document.body).getPropertyValue('--text-color-main').trim() || '#2b2b2b',
-    colorLight: getComputedStyle(document.body).getPropertyValue('--modal-bg').trim() || '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
+    text: currentShareCode,
+    width: 200,
+    height: 200,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.L
   });
 
   openModal(qrModal);
 }
 
-function checkUrlImport() {
-  const params = new URLSearchParams(window.location.search);
-  const importData = params.get('import');
-  if (!importData) return;
-
+function importFromCode(code) {
+  if (!code || !code.trim()) {
+    alert('코드를 입력해주세요.');
+    return;
+  }
+  if (!isLZStringReady()) {
+    alert('가져오기 기능을 위한 라이브러리가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
   try {
-    const decompressed = LZString.decompressFromEncodedURIComponent(importData);
-    if (!decompressed) throw new Error('Decompression failed');
-    
+    const decompressed = LZString.decompressFromEncodedURIComponent(code.trim());
+    if (!decompressed) throw new Error('Decompression failed - invalid code');
+
     const parsed = JSON.parse(decompressed);
-    
-    // Basic validation
     if (!parsed.name || !Array.isArray(parsed.sentences) || parsed.sentences.length === 0) {
       throw new Error('Invalid set structure');
     }
-    // Check for duplicate (by name and sentence count)
+
+    // Check for duplicate
     const isDuplicate = sets.some(s => s.name === parsed.name && s.sentences.length === parsed.sentences.length);
     if (isDuplicate) {
-      // Clean URL and continue without re-adding
-      history.replaceState({}, '', window.location.pathname);
+      alert(`"${parsed.name}" 세트는 이미 존재합니다.`);
       return;
     }
 
@@ -723,20 +749,38 @@ function checkUrlImport() {
     sets.push(newSet);
     currentSetId = newSet.id;
     saveSets();
+    renderSetsList();
+    renderSentenceList();
+    loadSentence(0);
 
-    // Clean URL so reload doesn't re-import
-    history.replaceState({}, '', window.location.pathname);
+    alert(`✅ "${newSet.name}" 세트가 성공적으로 추가되었습니다! (${newSet.sentences.length}개 문장)`);
+    return true;
+  } catch (err) {
+    console.error('Import failed:', err);
+    alert('가져오기 실패: 코드가 올바르지 않습니다.');
+    return false;
+  }
+}
 
-    // Show success notification after a brief moment
+function checkUrlImport() {
+  // URL-based import: works when app is hosted on a web server.
+  // The QR code now encodes pure data, but we still support the ?import= URL param
+  // for hosted deployments that generate URL-based QR codes.
+  if (!isLZStringReady()) return;
+
+  const params = new URLSearchParams(window.location.search);
+  const importData = params.get('import');
+  if (!importData) return;
+
+  // Clean URL immediately
+  history.replaceState({}, '', window.location.pathname);
+
+  const success = importFromCode(importData);
+  if (success) {
     setTimeout(() => {
-      alert(`✅ "${newSet.name}" 세트가 성공적으로 추가되었습니다! (${newSet.sentences.length}개 문장)`);
       renderSetsList();
       renderSentenceList();
-    }, 300);
-
-  } catch (err) {
-    console.error('QR Import failed:', err);
-    history.replaceState({}, '', window.location.pathname);
+    }, 100);
   }
 }
 
