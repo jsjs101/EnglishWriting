@@ -253,6 +253,26 @@
     </div>
   </div>
 
+  <!-- QR Code Share Modal -->
+  <div class="modal" id="qr-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Share Set via QR</h2>
+        <button class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <p style="margin-bottom: 1rem; color: var(--text-color-muted); font-size: 0.9rem;">Scan this QR code with a mobile camera to import this set.</p>
+        <div id="qr-code-container" style="display: flex; justify-content: center; margin: 1.5rem 0;">
+          <!-- QR Code will be generated here -->
+        </div>
+        <p id="qr-set-name" style="font-weight: 500; margin-bottom: 1.5rem;"></p>
+        <button id="btn-copy-link" class="primary-btn">Copy Link</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

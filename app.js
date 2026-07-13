@@ -72,6 +72,7 @@ const currentBlockEl = document.getElementById('current-block');
 const listModal = document.getElementById('list-modal');
 const settingsModal = document.getElementById('settings-modal');
 const resultModal = document.getElementById('result-modal');
+const qrModal = document.getElementById('qr-modal');
 
 // Buttons
 const btnPractice = document.getElementById('btn-practice');
@@ -80,6 +81,7 @@ const btnTest = document.getElementById('btn-test');
 // --- Initialization ---
 function init() {
   loadData();
+  checkUrlImport(); // Check if a shared set is in the URL before other setup
   applySettings();
   setupEventListeners();
   
@@ -459,9 +461,22 @@ function setupEventListeners() {
   });
   
   // Result Modals Buttons
+  document.getElementById('btn-copy-link').addEventListener('click', () => {
+    if (!currentQrUrl) return;
+    navigator.clipboard.writeText(currentQrUrl).then(() => {
+      const btn = document.getElementById('btn-copy-link');
+      const original = btn.textContent;
+      btn.textContent = 'Copied! ✓';
+      setTimeout(() => { btn.textContent = original; }, 2000);
+    }).catch(() => {
+      prompt('Copy this link manually:', currentQrUrl);
+    });
+  });
+
   document.getElementById('btn-save-result').addEventListener('click', () => {
     alert("테스트 결과가 저장되었습니다. (추후 기록 뷰에 연동)");
   });
+
   
   document.getElementById('btn-retry-test').addEventListener('click', () => {
     closeAllModals();
@@ -612,7 +627,12 @@ function renderSetsList() {
         <span class="set-name">${set.name}</span>
         <span class="set-date">${set.date} (${set.sentences.length} sentences)</span>
       </div>
-      <button class="delete-btn" data-id="${set.id}" title="Delete Set">&times;</button>
+      <div class="set-actions">
+        <button class="share-btn" data-id="${set.id}" title="Share via QR">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+        </button>
+        <button class="delete-btn" data-id="${set.id}" title="Delete Set">&times;</button>
+      </div>
     `;
     
     li.querySelector('.set-info').addEventListener('click', () => {
@@ -621,6 +641,11 @@ function renderSetsList() {
       renderSetsList();
       renderSentenceList();
       loadSentence(0);
+    });
+
+    li.querySelector('.share-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      openQrModal(set);
     });
     
     li.querySelector('.delete-btn').addEventListener('click', (e) => {
@@ -639,6 +664,82 @@ function renderSetsList() {
     
     ul.appendChild(li);
   });
+}
+
+// --- QR Code Share Logic ---
+let currentQrUrl = '';
+
+function openQrModal(set) {
+  const payload = JSON.stringify({ name: set.name, date: set.date, sentences: set.sentences });
+  const compressed = LZString.compressToEncodedURIComponent(payload);
+  const baseUrl = window.location.href.split('?')[0].split('#')[0];
+  currentQrUrl = `${baseUrl}?import=${compressed}`;
+
+  document.getElementById('qr-set-name').textContent = `"${set.name}" (${set.sentences.length} sentences)`;
+
+  const container = document.getElementById('qr-code-container');
+  container.innerHTML = ''; // Clear previous QR
+
+  new QRCode(container, {
+    text: currentQrUrl,
+    width: 220,
+    height: 220,
+    colorDark: getComputedStyle(document.body).getPropertyValue('--text-color-main').trim() || '#2b2b2b',
+    colorLight: getComputedStyle(document.body).getPropertyValue('--modal-bg').trim() || '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  openModal(qrModal);
+}
+
+function checkUrlImport() {
+  const params = new URLSearchParams(window.location.search);
+  const importData = params.get('import');
+  if (!importData) return;
+
+  try {
+    const decompressed = LZString.decompressFromEncodedURIComponent(importData);
+    if (!decompressed) throw new Error('Decompression failed');
+    
+    const parsed = JSON.parse(decompressed);
+    
+    // Basic validation
+    if (!parsed.name || !Array.isArray(parsed.sentences) || parsed.sentences.length === 0) {
+      throw new Error('Invalid set structure');
+    }
+    // Check for duplicate (by name and sentence count)
+    const isDuplicate = sets.some(s => s.name === parsed.name && s.sentences.length === parsed.sentences.length);
+    if (isDuplicate) {
+      // Clean URL and continue without re-adding
+      history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    const newSet = {
+      id: generateId(),
+      name: parsed.name,
+      date: parsed.date || new Date().toISOString().split('T')[0],
+      sentences: parsed.sentences
+    };
+
+    sets.push(newSet);
+    currentSetId = newSet.id;
+    saveSets();
+
+    // Clean URL so reload doesn't re-import
+    history.replaceState({}, '', window.location.pathname);
+
+    // Show success notification after a brief moment
+    setTimeout(() => {
+      alert(`✅ "${newSet.name}" 세트가 성공적으로 추가되었습니다! (${newSet.sentences.length}개 문장)`);
+      renderSetsList();
+      renderSentenceList();
+    }, 300);
+
+  } catch (err) {
+    console.error('QR Import failed:', err);
+    history.replaceState({}, '', window.location.pathname);
+  }
 }
 
 function renderSentenceList() {

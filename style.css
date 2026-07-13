@@ -224,11 +224,13 @@ body[data-mode="ko-only"] .typing-area .placeholder {
 .hidden-input {
   position: absolute;
   opacity: 0;
+  z-index: -1;
   top: 0;
   left: 0;
   height: 100%;
   width: 100%;
-  color: transparent;
+  color: #000; /* Must NOT be transparent, otherwise iOS Safari types backwards */
+  caret-color: transparent;
   background: transparent;
   border: none;
   outline: none;
@@ -851,4 +853,45 @@ h4 {
   .result-actions {
     flex-direction: column;
   }
+}
+
+/* --- QR Share Feature --- */
+.set-list li {
+  align-items: center;
+}
+
+.set-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.share-btn {
+  background: none;
+  border: none;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.share-btn:hover {
+  color: var(--text-color-main);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .share-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* QR Code canvas/img theming */
+#qr-code-container canvas,
+#qr-code-container img {
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
 }
