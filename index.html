@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>English Writing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Progress Bar -->
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+
+  <!-- Top Navigation -->
+  <header class="top-nav">
+    <div class="logo">영작</div>
+    <nav class="nav-links">
+      <button class="nav-btn" id="btn-practice">Practice</button>
+      <button class="nav-btn" id="btn-test">Test</button>
+      <button class="nav-btn" id="btn-list">Sets & Sentences</button>
+      <button class="nav-btn" id="btn-settings">Settings</button>
+    </nav>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="main-container">
+    <div class="typing-container">
+      
+      <!-- Previous Sentence Context -->
+      <div class="context-sentence prev-sentence" id="prev-sentence"></div>
+      
+      <!-- Current Sentence -->
+      <div class="current-sentence-block" id="current-block">
+        <div class="sentence-korean" id="korean-text">
+          여기에 한국어 문장이 표시됩니다.
+        </div>
+        
+        <div class="typing-area" id="typing-area">
+          <span class="placeholder">Typing area...</span>
+        </div>
+        
+        <input type="text" id="hidden-input" class="hidden-input" autocomplete="off" spellcheck="false" autofocus>
+      </div>
+
+      <!-- Next Sentence Context -->
+      <div class="context-sentence next-sentence" id="next-sentence"></div>
+
+    </div>
+  </main>
+
+  <!-- Bottom Actions -->
+  <footer class="bottom-bar">
+    <div class="left-actions">
+      <button class="icon-btn" id="btn-restart" title="Restart (Tab)">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+      </button>
+      <button class="icon-btn" id="btn-next" title="Next (Enter)">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
+    </div>
+    
+    <div class="meta-info">
+      <div class="title" id="set-title">Default Set</div>
+      <div class="progress" id="progress-text">0 / 0</div>
+    </div>
+    
+    <div class="right-actions">
+      <!-- Display Mode Selector (Quick Access) -->
+      <div class="custom-select-wrapper">
+        <select id="quick-display-mode" class="mode-select">
+          <option value="normal">Normal</option>
+          <option value="ko-only">Korean Only</option>
+          <option value="en-only">English Only</option>
+          <option value="ko-partial">Korean Partial</option>
+          <option value="en-hint">English Hint</option>
+        </select>
+        <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modals -->
+
+  <!-- Sentences List Modal -->
+  <div class="modal" id="list-modal">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h2>Sets & Sentences</h2>
+        <button class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body layout-split">
+        <!-- Sets Management -->
+        <div class="sets-panel">
+          <h3>My Sets</h3>
+          <ul class="set-list" id="set-list-ul">
+            <!-- Set items -->
+          </ul>
+          
+          <div class="upload-section">
+            <h4>Upload New Set</h4>
+            <input type="text" id="new-set-name" placeholder="Set Name" class="input-field">
+            
+            <div class="file-inputs">
+              <label class="file-label">
+                <span>KO (.txt)</span>
+                <input type="file" id="file-ko" accept=".txt">
+              </label>
+              <label class="file-label">
+                <span>EN (.txt)</span>
+                <input type="file" id="file-en" accept=".txt">
+              </label>
+            </div>
+            <button id="btn-upload-set" class="primary-btn">Create Set from Files</button>
+            <p class="help-text">* 줄바꿈(Enter) 기준으로 문장이 매핑됩니다.</p>
+          </div>
+        </div>
+
+        <!-- Sentences in Current Set -->
+        <div class="sentences-panel">
+          <h3 id="current-set-header">Sentences</h3>
+          <div class="add-sentence-form">
+            <input type="text" id="new-ko" placeholder="Korean (e.g. 사과는 빨갛다)" class="input-field">
+            <input type="text" id="new-en" placeholder="English (e.g. Apples are red)" class="input-field">
+            <button id="btn-add-sentence" class="primary-btn">Add</button>
+          </div>
+          <ul class="sentence-list" id="sentence-list-ul">
+            <!-- List items injected here -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settings-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        
+        <div class="setting-group">
+          <h3>Display & Modes</h3>
+          
+          <div class="setting-item">
+            <label for="display-mode">Display Mode</label>
+            <div class="custom-select-wrapper">
+              <select id="display-mode" class="mode-select">
+                <option value="normal">Normal</option>
+                <option value="ko-only">Korean Only</option>
+                <option value="en-only">English Only</option>
+                <option value="ko-partial">Korean Partial</option>
+                <option value="en-hint">English Hint</option>
+              </select>
+              <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+
+          <div class="setting-item" id="hint-config-row">
+            <label for="hint-level">English Hint Level (단어당 노출 글자 수)</label>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="range" id="hint-level" min="1" max="5" value="1" class="range-slider">
+              <span id="hint-level-val" style="font-family: var(--font-typing); width: 20px; text-align: center;">1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h3>Typing & Rules</h3>
+          
+          <div class="setting-item">
+            <label for="show-error-feedback">Show Error in Red (오답 붉은색 표시)</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="show-error-feedback" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          
+          <div class="setting-item">
+            <label for="ignore-case">Ignore Case (대소문자 무시)</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="ignore-case" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          
+          <div class="setting-item">
+            <label for="ignore-punct">Ignore Punctuation (구두점 무시)</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="ignore-punct" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          
+          <div class="setting-item">
+            <label for="shuffle-mode">Shuffle Sentences (랜덤 순서)</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="shuffle-mode">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <label for="typing-sound">Typing Sound (타건음)</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="typing-sound" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <h3>Appearance</h3>
+          <div class="setting-item">
+            <label for="theme-toggle">Dark Theme</label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="theme-toggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Result Modal -->
+  <div class="modal" id="result-modal">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h2>Test Results</h2>
+        <button class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="result-summary">
+          <h3 id="result-score">Score: 0 / 0 (0%)</h3>
+          <button id="btn-save-result" class="primary-btn" style="width: auto; padding: 0.5rem 1rem; font-size: 0.9rem;">Save Log</button>
+        </div>
+        <div class="result-details" id="result-details">
+          <!-- Result items injected here -->
+        </div>
+        <div class="result-actions">
+          <button id="btn-retry-test" class="primary-btn">Retry Test</button>
+          <button id="btn-result-practice" class="nav-btn" style="width: 100%; margin-top: 0.5rem; text-align: center;">Back to Practice</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
