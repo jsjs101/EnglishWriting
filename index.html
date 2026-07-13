@@ -267,19 +267,31 @@
         <button class="close-btn">&times;</button>
       </div>
       <div class="modal-body" style="text-align: center;">
-        <p style="margin-bottom: 1rem; color: var(--text-color-muted); font-size: 0.9rem;">기본 카메라로 QR 코드를 스캔하거나, 아래 코드를 복사해서 Import 하세요.</p>
+        <p style="margin-bottom: 0.75rem; color: var(--text-color-muted); font-size: 0.85rem;">기본 카메라로 QR 코드를 스캔하거나, 아래 코드를 복사해서 Import 하세요.</p>
+
+        <!-- QR Code (shown for small sets) -->
         <div id="qr-code-container" style="display: flex; justify-content: center; margin: 1rem 0;">
           <!-- QR Code will be generated here -->
         </div>
-        <p id="qr-set-name" style="font-weight: 500; margin-bottom: 1rem;"></p>
+
+        <!-- Notice for large sets (QR not possible) -->
+        <div id="qr-size-notice" style="display: none; background: rgba(211,47,47,0.08); border: 1px solid rgba(211,47,47,0.2); border-radius: 8px; padding: 0.75rem 1rem; margin: 0.75rem 0; font-size: 0.85rem; color: var(--text-color-main); text-align: left; white-space: pre-line; line-height: 1.6;"></div>
+
+        <p id="qr-set-name" style="font-weight: 500; margin-bottom: 0.75rem;"></p>
+
         <div style="text-align: left; margin-bottom: 1rem;">
           <p style="font-size: 0.75rem; color: var(--text-color-muted); margin-bottom: 0.4rem;">Share Code (이 코드를 복사해서 다른 기기에서 Import 하세요)</p>
           <textarea id="qr-share-code" class="input-field" rows="3" readonly style="font-family: var(--font-typing); font-size: 0.7rem; resize: none; cursor: text;"></textarea>
         </div>
-        <button id="btn-copy-link" class="primary-btn">Copy Share Code</button>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <button id="btn-web-share" class="primary-btn" style="display: none;">📤 앱으로 공유하기 (카카오톡, 메시지 등)</button>
+          <button id="btn-copy-link" class="primary-btn">Copy Share Code</button>
+        </div>
       </div>
     </div>
   </div>
+
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>

@@ -486,6 +486,15 @@ function setupEventListeners() {
     }
   });
 
+  document.getElementById('btn-web-share').addEventListener('click', () => {
+    if (!navigator.share || !currentShareCode) return;
+    navigator.share({
+      title: '\uc601\uc791 \uc138\ud2b8 \uacf5\uc720',
+      text: `\uc601\uc791 \ubb38\uc7a5 \uc138\ud2b8\ub97c \uacf5\uc720\ud569\ub2c8\ub2e4!\n\n[\ubc1b\ub294 \ubc29\ubc95]\n1. \uc601\uc791 \uc571 \uc5f4\uae30\n2. Sets & Sentences \ud074\ub9ad\n3. "Import from QR Code" \uc5d0 \uc544\ub798 \ucf54\ub4dc \ubd99\uc5ec\ub123\uae30\n4. Import Set \ud074\ub9ad\n\n\ucf54\ub4dc:\n${currentShareCode}`
+    }).catch(() => {});
+  });
+
+
   document.getElementById('btn-save-result').addEventListener('click', () => {
     alert("테스트 결과가 저장되었습니다. (추후 기록 뷰에 연동)");
   });
@@ -691,25 +700,40 @@ function openQrModal(set) {
     return;
   }
 
-  const payload = JSON.stringify({ name: set.name, date: set.date, sentences: set.sentences });
-  // Encode as pure data (not a URL) so QR code stays small and works offline/locally
-  currentShareCode = LZString.compressToEncodedURIComponent(payload);
+  const lines = [set.name];
+  set.sentences.forEach(s => lines.push(`${s.ko}|||${s.en}`));
+  currentShareCode = LZString.compressToBase64(lines.join('\n'));
 
   document.getElementById('qr-set-name').textContent = `"${set.name}" (${set.sentences.length}개 문장)`;
   document.getElementById('qr-share-code').value = currentShareCode;
 
   const container = document.getElementById('qr-code-container');
-  container.innerHTML = ''; // Clear previous QR
+  const notice = document.getElementById('qr-size-notice');
+  const webShareBtn = document.getElementById('btn-web-share');
+  container.innerHTML = '';
 
-  // Use lowest error correction level (L) to keep QR code small and easy to scan
-  new QRCode(container, {
-    text: currentShareCode,
-    width: 200,
-    height: 200,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.L
-  });
+  // QR codes become too dense to scan reliably above ~350 chars at 300x300px
+  const QR_CHAR_LIMIT = 350;
+
+  if (currentShareCode.length <= QR_CHAR_LIMIT) {
+    notice.style.display = 'none';
+    container.style.display = 'flex';
+    new QRCode(container, {
+      text: currentShareCode,
+      width: 300,
+      height: 300,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.L
+    });
+  } else {
+    container.style.display = 'none';
+    notice.style.display = 'block';
+    notice.textContent = `현재 세트가 너무 커서 (${set.sentences.length}개 문장) QR 코드로 만듄 수 없습니다.\n아래 코드를 복사해서 카특/메시지로 공유하세요.`;
+  }
+
+  // Show Web Share button only when the browser API is available (most mobile browsers)
+  webShareBtn.style.display = navigator.share ? 'block' : 'none';
 
   openModal(qrModal);
 }
@@ -724,26 +748,48 @@ function importFromCode(code) {
     return;
   }
   try {
-    const decompressed = LZString.decompressFromEncodedURIComponent(code.trim());
-    if (!decompressed) throw new Error('Decompression failed - invalid code');
+    const raw = code.trim();
 
-    const parsed = JSON.parse(decompressed);
-    if (!parsed.name || !Array.isArray(parsed.sentences) || parsed.sentences.length === 0) {
+    // Try new compact Base64 format first, then fall back to old URI-encoded JSON
+    let name, sentences;
+    const decompressedB64 = LZString.decompressFromBase64(raw);
+
+    if (decompressedB64 && decompressedB64.includes('|||')) {
+      // --- New compact format ---
+      const lines = decompressedB64.split('\n');
+      name = lines[0].trim();
+      sentences = lines.slice(1)
+        .map(line => {
+          const idx = line.indexOf('|||');
+          if (idx === -1) return null;
+          return { ko: line.slice(0, idx).trim(), en: line.slice(idx + 3).trim() };
+        })
+        .filter(s => s && s.ko && s.en);
+    } else {
+      // --- Fallback: old JSON format ---
+      const decompressedUri = LZString.decompressFromEncodedURIComponent(raw);
+      if (!decompressedUri) throw new Error('Decompression failed - invalid code');
+      const parsed = JSON.parse(decompressedUri);
+      name = parsed.name;
+      sentences = parsed.sentences;
+    }
+
+    if (!name || !Array.isArray(sentences) || sentences.length === 0) {
       throw new Error('Invalid set structure');
     }
 
     // Check for duplicate
-    const isDuplicate = sets.some(s => s.name === parsed.name && s.sentences.length === parsed.sentences.length);
+    const isDuplicate = sets.some(s => s.name === name && s.sentences.length === sentences.length);
     if (isDuplicate) {
-      alert(`"${parsed.name}" 세트는 이미 존재합니다.`);
+      alert(`"${name}" 세트는 이미 존재합니다.`);
       return;
     }
 
     const newSet = {
       id: generateId(),
-      name: parsed.name,
-      date: parsed.date || new Date().toISOString().split('T')[0],
-      sentences: parsed.sentences
+      name,
+      date: new Date().toISOString().split('T')[0],
+      sentences
     };
 
     sets.push(newSet);
