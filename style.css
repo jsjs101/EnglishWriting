@@ -869,24 +869,30 @@ h4 {
 
 .share-btn {
   background: none;
-  border: none;
+  border: 1px solid var(--border-color);
   color: var(--text-color-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
-  border-radius: 4px;
-  transition: color 0.2s, background-color 0.2s;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+  white-space: nowrap;
 }
 
 .share-btn:hover {
   color: var(--text-color-main);
-  background-color: rgba(0, 0, 0, 0.05);
+  border-color: var(--text-color-main);
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 [data-theme="dark"] .share-btn:hover {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 /* QR Code canvas/img theming */
