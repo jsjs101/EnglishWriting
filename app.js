@@ -316,6 +316,15 @@ function checkCharMatch(typed, target) {
   let typeCmp = typed;
   let targetCmp = target;
 
+  // Normalize smart quotes to straight quotes (common on mobile keyboards)
+  const normalizeQuotes = (str) => {
+    if (!str) return str;
+    return str.replace(/[‘’]/g, "'").replace(/[“”]/g, '"');
+  };
+  
+  typeCmp = normalizeQuotes(typeCmp);
+  targetCmp = normalizeQuotes(targetCmp);
+
   if (currentSettings.ignoreCase) {
     typeCmp = typeCmp.toLowerCase();
     targetCmp = targetCmp.toLowerCase();

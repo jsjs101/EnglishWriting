@@ -226,10 +226,14 @@ body[data-mode="ko-only"] .typing-area .placeholder {
   opacity: 0;
   top: 0;
   left: 0;
-  height: 0;
-  width: 0;
+  height: 100%;
+  width: 100%;
+  color: transparent;
+  background: transparent;
+  border: none;
+  outline: none;
   pointer-events: none;
-  font-size: 16px; /* Prevent iOS Safari auto-zoom on focus */
+  font-size: 1.75rem; /* Match typing area to prevent zoom and keep cursor metrics somewhat sane */
 }
 
 /* Bottom Bar */
